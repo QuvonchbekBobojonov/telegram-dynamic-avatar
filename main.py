@@ -60,7 +60,7 @@ async def create_avatar():
     now = datetime.datetime.now().strftime("%H:%M")
 
     # Shrifitni to'g'irlaymiz
-    font_path = os.path.join(base_dir, "fonts", "DS-DIGI.TTF")
+    font_path = os.path.join(base_dir, "fonts", "Arial.ttf")
     try:
         if os.path.exists(font_path):
             font = ImageFont.truetype(font_path, 150)
@@ -69,7 +69,15 @@ async def create_avatar():
     except Exception:
         font = ImageFont.load_default()
 
-    d.text((60, 160), now, fill=(255, 255, 255), font=font)
+    W, H = img.size
+    bbox = d.text_bbox((0, 0), now, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+    x_pos = (W - w) / 2
+    y_pos = (H - h) / 2
+
+    # Matnni chizish
+    d.text((x_pos, y_pos), now, fill=(255, 255, 255), font=font)
     img.save(os.path.join(base_dir, 'avatar.png'))
 
 
