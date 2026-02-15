@@ -70,8 +70,15 @@ async def create_avatar():
         font = ImageFont.load_default()
 
     W, H = img.size
-    bbox = d.text_bbox((0, 0), now, font=font)
-    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    
+    # Matn o'lchamini aniqlash (Pillow versiyasiga qarab)
+    try:
+        # Yangi Pillow versiyalari uchun
+        bbox = d.text_bbox((0, 0), now, font=font)
+        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    except AttributeError:
+        # Eski Pillow versiyalari uchun
+        w, h = d.textsize(now, font=font)
 
     x_pos = (W - w) / 2
     y_pos = (H - h) / 2
