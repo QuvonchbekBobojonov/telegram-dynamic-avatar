@@ -40,37 +40,30 @@ def get_background_name():
 
 async def create_avatar():
     bg_file = get_background_name()
-    
-    # PythonAnywhere da to'liq yo'lni ko'rsatish maqsadga muvofiq
     base_dir = os.path.dirname(os.path.abspath(__file__))
     bg_path = os.path.join(base_dir, bg_file)
 
     try:
-        if os.path.exists(bg_path):
-            img = Image.open(bg_path)
-            img = img.resize((500, 500))
-        else:
-            print(f"Rasm topilmadi: {bg_path}")
-            img = Image.new('RGB', (500, 500), color=(33, 150, 243))
-    except Exception as e:
-        print(f"Rasm ochishda xato: {e}")
+        img = Image.open(bg_path).resize((500, 500))
+    except:
         img = Image.new('RGB', (500, 500), color=(33, 150, 243))
 
     d = ImageDraw.Draw(img)
-    now = datetime.datetime.now().strftime("%H:%M")
+    now_str = datetime.datetime.now().strftime("%H:%M")
 
     font_path = os.path.join(base_dir, "fonts", "Arial.ttf")
     try:
-        if os.path.exists(font_path):
-            font = ImageFont.truetype(font_path, 150)
-        else:
-            font = ImageFont.load_default()
-    except Exception as e:
-        print(f"Font yuklashda xato: {e}")
+        font = ImageFont.truetype(font_path, 150)
+    except:
         font = ImageFont.load_default()
 
-    d.text((60, 160), now, fill=(255, 255, 255), font=font)
-    img.save(os.path.join(base_dir, 'avatar.png'))
+    bbox = d.text_bbox((0, 0), now_str, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    d.text(((500 - w) / 2, (500 - h) / 2), now_str, fill=(255, 255, 255), font=font)
+
+    save_path = os.path.join(base_dir, 'avatar.png')
+    img.save(save_path)
+    return save_path
 
 
 async def update_profile_photo():
