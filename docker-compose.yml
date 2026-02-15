@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  tg-avatar:
+    build: .
+    container_name: telegram-dynamic-avatar
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      # Sessiya fayli saqlanib qolishi uchun volume qo'shamiz
+      - ./tg.session:/app/tg.session
