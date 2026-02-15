@@ -76,7 +76,7 @@ async def update_profile_photo():
             await client(functions.photos.UploadProfilePhotoRequest(file=file))
             print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi!")
 
-            photos = await client.get_profile_photos('me', limit=1)
+            photos = await client.get_profile_photos('me', limit=10)
 
             if len(photos) > 1:
                 old_photos = photos[1:]
