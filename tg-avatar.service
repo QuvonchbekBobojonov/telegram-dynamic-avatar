@@ -5,8 +5,10 @@ After=network.target
 [Service]
 Type=simple
 User=root
+# VPS-dagi loyiha yo'li
 WorkingDirectory=/root/telegram-dynamic-avatar
-ExecStart=/usr/bin/python3 main.py
+# Virtual muhitdagi Python-ga yo'l
+ExecStart=/root/telegram-dynamic-avatar/venv/bin/python main.py
 Restart=always
 RestartSec=10
 
