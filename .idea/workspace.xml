@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1a2132bb-e792-4b9a-8309-073bfc265cc0" name="Changes" comment="Fix: update font loading and simplify text positioning in avatar generation">
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="1a2132bb-e792-4b9a-8309-073bfc265cc0" name="Changes" comment="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -122,12 +120,30 @@
       <option name="project" value="LOCAL" />
       <updated>1771176654285</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Fix: streamline avatar generation by improving font loading and centering text">
+      <option name="closed" value="true" />
+      <created>1771176808685</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1771176808685</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering">
+      <option name="closed" value="true" />
+      <created>1771177048540</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1771177048540</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix: update font loading and simplify text positioning in avatar generation" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix: update font loading and simplify text positioning in avatar generation" />
+    <MESSAGE value="Fix: streamline avatar generation by improving font loading and centering text" />
+    <MESSAGE value="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>

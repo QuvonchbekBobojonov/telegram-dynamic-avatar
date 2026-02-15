@@ -51,7 +51,7 @@ async def create_avatar():
     now = datetime.datetime.now().strftime("%H:%M")
 
     try:
-        font = ImageFont.truetype("arial.ttf", 150)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 150)
     except:
         font = ImageFont.load_default()
 
