@@ -40,31 +40,23 @@ def get_background_name():
 
 async def create_avatar():
     bg_file = get_background_name()
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    bg_path = os.path.join(base_dir, bg_file)
 
     try:
-        img = Image.open(bg_path).resize((500, 500))
+        img = Image.open(bg_file)
+        img = img.resize((500, 500))  # O'lchamni to'g'rilash
     except:
         img = Image.new('RGB', (500, 500), color=(33, 150, 243))
 
     d = ImageDraw.Draw(img)
-    now_str = datetime.datetime.now().strftime("%H:%M")
+    now = datetime.datetime.now().strftime("%H:%M")
 
-    font_path = os.path.join(base_dir, "fonts", "Arial.ttf")
     try:
-        font = ImageFont.truetype(font_path, 150)
+        font = ImageFont.truetype("arial.ttf", 150)
     except:
         font = ImageFont.load_default()
 
-    bbox = d.text_bbox((0, 0), now_str, font=font)
-    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    d.text(((500 - w) / 2, (500 - h) / 2), now_str, fill=(255, 255, 255), font=font)
-
-    save_path = os.path.join(base_dir, 'avatar.png')
-    img.save(save_path)
-    return save_path
-
+    d.text((80, 150), now, fill=(255, 255, 255), font=font)
+    img.save('avatar.png')
 
 async def update_profile_photo():
     try:
