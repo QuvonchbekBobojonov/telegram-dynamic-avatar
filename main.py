@@ -59,32 +59,17 @@ async def create_avatar():
     d = ImageDraw.Draw(img)
     now = datetime.datetime.now().strftime("%H:%M")
 
-    # Shrifitni to'g'irlaymiz
     font_path = os.path.join(base_dir, "fonts", "Arial.ttf")
     try:
         if os.path.exists(font_path):
             font = ImageFont.truetype(font_path, 150)
         else:
             font = ImageFont.load_default()
-    except Exception:
+    except Exception as e:
+        print(f"Font yuklashda xato: {e}")
         font = ImageFont.load_default()
 
-    W, H = img.size
-    
-    # Matn o'lchamini aniqlash (Pillow versiyasiga qarab)
-    try:
-        # Yangi Pillow versiyalari uchun
-        bbox = d.text_bbox((0, 0), now, font=font)
-        w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    except AttributeError:
-        # Eski Pillow versiyalari uchun
-        w, h = d.textsize(now, font=font)
-
-    x_pos = (W - w) / 2
-    y_pos = (H - h) / 2
-
-    # Matnni chizish
-    d.text((x_pos, y_pos), now, fill=(255, 255, 255), font=font)
+    d.text((60, 160), now, fill=(255, 255, 255), font=font)
     img.save(os.path.join(base_dir, 'avatar.png'))
 
 
