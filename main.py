@@ -15,44 +15,63 @@ api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 tg_password = os.getenv('TG_PASSWORD')
 
+# Ma'lumotlarni keshlab turish uchun global o'zgaruvchi
+DATA_CACHE = {
+    'BTC': (None, [], "BTC / USD", 0),
+    'USD': (None, [], "USD / UZS", 0),
+    'GOLD': (None, [], "GOLD / USD", 0)
+}
+
 def get_btc_data():
     try:
         url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
         data = response.json()
         prices_history = [p[1] for p in data['prices']]
         current_price = prices_history[-1]
         start_price = prices_history[0]
         change_pct = ((current_price - start_price) / start_price) * 100
-        return current_price, prices_history, "BTC / USD", change_pct
-    except Exception:
-        return None, [], "BTC / USD", 0
+        res = (current_price, prices_history, "BTC / USD", change_pct)
+        DATA_CACHE['BTC'] = res
+        return res
+    except Exception as e:
+        print(f"BTC API xatolik: {e}")
+        return DATA_CACHE['BTC']
 
 def get_usd_uzs_data():
     try:
         url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/USD/all/"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
         data = response.json()
         current_price = float(data[0]['Rate'])
         change_pct = random.uniform(-0.02, 0.05) 
         history = [current_price * (1 + random.uniform(-0.001, 0.001)) for _ in range(50)]
         history.append(current_price)
-        return current_price, history, "USD / UZS", change_pct
-    except Exception:
-        return None, [], "USD / UZS", 0
+        res = (current_price, history, "USD / UZS", change_pct)
+        DATA_CACHE['USD'] = res
+        return res
+    except Exception as e:
+        print(f"USD API xatolik: {e}")
+        return DATA_CACHE['USD']
 
 def get_gold_data():
     try:
         url = "https://api.coingecko.com/api/v3/coins/pax-gold/market_chart?vs_currency=usd&days=1"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
         data = response.json()
         prices_history = [p[1] for p in data['prices']]
         current_price = prices_history[-1]
         start_price = prices_history[0]
         change_pct = ((current_price - start_price) / start_price) * 100
-        return current_price, prices_history, "GOLD / USD", change_pct
-    except Exception:
-        return None, [], "GOLD / USD", 0
+        res = (current_price, prices_history, "GOLD / USD", change_pct)
+        DATA_CACHE['GOLD'] = res
+        return res
+    except Exception as e:
+        print(f"GOLD API xatolik: {e}")
+        return DATA_CACHE['GOLD']
 
 def get_font(size):
     local_font = "fonts/font.ttf"
