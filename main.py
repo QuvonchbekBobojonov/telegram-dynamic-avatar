@@ -30,12 +30,16 @@ def get_btc_data():
         return None, []
 
 def get_font(size):
+    # Ubuntu va Windows-da bir xil ko'rinishi uchun lokal fontdan foydalanamiz
+    local_font = "fonts/font.ttf"
+    if os.path.exists(local_font):
+        return ImageFont.truetype(local_font, size)
+    
+    # Agar lokal font bo'lmasa, tizimdagi standartlardan qidiramiz
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "C:\\Windows\\Fonts\\arialbd.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf",
-        "fonts/DejaVuSans-Bold.ttf",
-        "arial.ttf"
+        "C:\\Windows\\Fonts\\arial.ttf"
     ]
     for path in font_paths:
         if os.path.exists(path):
