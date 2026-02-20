@@ -24,9 +24,9 @@ def get_btc_data():
         current_price = prices_history[-1]
         start_price = prices_history[0]
         change_pct = ((current_price - start_price) / start_price) * 100
-        return current_price, prices_history, "BTC", change_pct
+        return current_price, prices_history, "BTC / USD", change_pct
     except Exception:
-        return None, [], "BTC", 0
+        return None, [], "BTC / USD", 0
 
 def get_usd_uzs_data():
     try:
@@ -34,12 +34,12 @@ def get_usd_uzs_data():
         response = requests.get(url, timeout=10)
         data = response.json()
         current_price = float(data[0]['Rate'])
-        change_pct = random.uniform(-0.05, 0.05) 
+        change_pct = random.uniform(-0.02, 0.05) 
         history = [current_price * (1 + random.uniform(-0.001, 0.001)) for _ in range(50)]
         history.append(current_price)
-        return current_price, history, "USD/UZS", change_pct
+        return current_price, history, "USD / UZS", change_pct
     except Exception:
-        return None, [], "USD/UZS", 0
+        return None, [], "USD / UZS", 0
 
 def get_gold_data():
     try:
@@ -50,9 +50,9 @@ def get_gold_data():
         current_price = prices_history[-1]
         start_price = prices_history[0]
         change_pct = ((current_price - start_price) / start_price) * 100
-        return current_price, prices_history, "GOLD", change_pct
+        return current_price, prices_history, "GOLD / USD", change_pct
     except Exception:
-        return None, [], "GOLD", 0
+        return None, [], "GOLD / USD", 0
 
 def get_font(size):
     local_font = "fonts/font.ttf"
@@ -88,8 +88,11 @@ def draw_trading_chart(d, history, color, area):
     fill_points = [(mx, my_bottom)] + points + [(mx + width, my_bottom)]
     d.polygon(fill_points, fill=(color[0]//5, color[1]//5, color[2]//5))
 
-async def create_avatar(session_name):
-    choice = random.choice(['BTC', 'USD', 'GOLD'])
+async def create_avatar(session_name, choice=None):
+    # Agar tanlov berilmagan bo'sa, tasodifiy tanlaymiz
+    if not choice:
+        choice = random.choice(['BTC', 'USD', 'GOLD'])
+        
     if choice == 'BTC':
         price, history, label, change = get_btc_data()
         color = (16, 185, 129)
@@ -107,14 +110,20 @@ async def create_avatar(session_name):
     d = ImageDraw.Draw(img)
 
     if price and history:
-        d.text((40, 40), label, fill=(148, 163, 184), font=get_font(30))
+        # Dumaloq crop-ga moslash uchun markazlashtirilgan koordinatalar
+        d.text((80, 70), label, fill=(148, 163, 184), font=get_font(30))
         change_text = f"{'+' if change >= 0 else ''}{change:.2f}%"
         change_color = (16, 185, 129) if change >= 0 else (239, 68, 68)
-        d.text((460, 40), change_text, fill=change_color, font=get_font(28), anchor="ra")
+        d.text((420, 70), change_text, fill=change_color, font=get_font(28), anchor="ra")
+        
         price_str = f"{prefix}{price:,.0f}" if choice != 'GOLD' else f"{prefix}{price:,.2f}"
-        d.text((40, 80), price_str, fill=(255, 255, 255), font=get_font(75))
-        draw_trading_chart(d, history, color, (40, 200, 420, 250))
-        d.rectangle([10, 10, 490, 490], outline=(30, 41, 59), width=2)
+        d.text((80, 110), price_str, fill=(255, 255, 255), font=get_font(75))
+        
+        draw_trading_chart(d, history, color, (80, 210, 340, 200))
+        
+        # Dekoratsiya
+        d.line([(80, 440), (420, 440)], fill=(30, 45, 80), width=1)
+        d.text((250, 455), "TERMINAL DATA", fill=(50, 80, 140), font=get_font(18), anchor="ma")
     else:
         d.text((150, 220), "Loading...", fill=(255, 255, 255), font=get_font(40))
 
@@ -122,7 +131,7 @@ async def create_avatar(session_name):
     img.save(filename)
     return filename
 
-async def session_worker(session_path):
+async def session_worker(session_path, session_index):
     session_name = os.path.basename(session_path).replace('.session', '')
     print(f"[{session_name}] Ish boshlanmoqda...")
     
@@ -132,21 +141,24 @@ async def session_worker(session_path):
         me = await client.get_me()
         print(f"[{session_name}] Muvaffaqiyatli kirdi: {me.first_name}")
 
+        choices = ['BTC', 'USD', 'GOLD']
         while True:
             try:
-                # Har bir seans uchun alohida rasm yaratamiz
-                avatar_file = await create_avatar(session_name)
+                # Har bir seans uchun har xil valyuta tanlaymiz (index ga qarab)
+                # Har 15 minutda (900 soniya) valyutalar almashib turadi
+                time_offset = int(datetime.datetime.now().timestamp() / 900)
+                my_choice = choices[(session_index + time_offset) % len(choices)]
                 
-                # Yangilash
+                avatar_file = await create_avatar(session_name, choice=my_choice)
+                
                 file = await client.upload_file(avatar_file)
                 await client(functions.photos.UploadProfilePhotoRequest(file=file))
                 
-                # Eski rasmlarni o'chirish
                 photos = await client.get_profile_photos('me', limit=10)
                 if len(photos) > 1:
                     await client(functions.photos.DeletePhotosRequest(id=photos[1:]))
                 
-                print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi!")
+                print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi ({my_choice})!")
             except Exception as e:
                 print(f"[{session_name}] Xato: {e}")
             
@@ -157,7 +169,6 @@ async def session_worker(session_path):
         await client.disconnect()
 
 async def main():
-    # Barcha .session fayllarni qidiramiz
     sessions = glob.glob("*.session")
     if not sessions:
         print("Hech qanday .session fayli topilmadi!")
@@ -165,8 +176,8 @@ async def main():
 
     print(f"Topilgan seanslar: {', '.join(sessions)}")
     
-    # Barcha seanslarni bir vaqtda ishga tushiramiz
-    await asyncio.gather(*(session_worker(s) for s in sessions))
+    # Seanslarni index bilan ishga tushiramiz
+    await asyncio.gather(*(session_worker(s, i) for i, s in enumerate(sessions)))
 
 if __name__ == '__main__':
     try:
