@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1a2132bb-e792-4b9a-8309-073bfc265cc0" name="Changes" comment="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
+    <list default="true" id="1a2132bb-e792-4b9a-8309-073bfc265cc0" name="Changes" comment="Fix: increase limit for fetching profile photos in avatar update process" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -136,14 +136,41 @@
       <option name="project" value="LOCAL" />
       <updated>1771177048540</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Fix: update font path to DejaVuSans-Bold for improved text rendering in avatar generation">
+      <option name="closed" value="true" />
+      <created>1771177222674</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1771177222674</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Fix: adjust font size in avatar generation for improved text rendering">
+      <option name="closed" value="true" />
+      <created>1771177341189</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1771177341189</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Fix: increase limit for fetching profile photos in avatar update process">
+      <option name="closed" value="true" />
+      <created>1771177415029</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1771177415029</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Fix: update font loading and simplify text positioning in avatar generation" />
     <MESSAGE value="Fix: streamline avatar generation by improving font loading and centering text" />
     <MESSAGE value="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix: simplify avatar creation by removing unnecessary path handling and improving text rendering" />
+    <MESSAGE value="Fix: update font path to DejaVuSans-Bold for improved text rendering in avatar generation" />
+    <MESSAGE value="Fix: adjust font size in avatar generation for improved text rendering" />
+    <MESSAGE value="Fix: increase limit for fetching profile photos in avatar update process" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix: increase limit for fetching profile photos in avatar update process" />
   </component>
   <component name="github-copilot-workspace">
     <instructionFileLocations>
