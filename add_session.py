@@ -8,6 +8,7 @@ load_dotenv()
 
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
+tg_password = os.getenv('TG_PASSWORD')
 
 async def add_session():
     print("=== Yangi Telegram Seansini Qo'shish ===")
