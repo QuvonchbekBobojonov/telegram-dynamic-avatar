@@ -107,14 +107,24 @@ async def create_avatar(session_name):
     d = ImageDraw.Draw(img)
 
     if price and history:
-        d.text((40, 40), label, fill=(148, 163, 184), font=get_font(30))
+        # 1. Label va 24s o'zgarish (Markazga yaqinroq surildi - doira ichiga tushishi uchun)
+        d.text((80, 70), label, fill=(148, 163, 184), font=get_font(30))
+        
         change_text = f"{'+' if change >= 0 else ''}{change:.2f}%"
         change_color = (16, 185, 129) if change >= 0 else (239, 68, 68)
-        d.text((460, 40), change_text, fill=change_color, font=get_font(28), anchor="ra")
+        # O'ng tarafdan chekkaroqqa surildi
+        d.text((420, 70), change_text, fill=change_color, font=get_font(28), anchor="ra")
+
+        # 2. Asosiy Narx (Markazroqqa surildi)
         price_str = f"{prefix}{price:,.0f}" if choice != 'GOLD' else f"{prefix}{price:,.2f}"
-        d.text((40, 80), price_str, fill=(255, 255, 255), font=get_font(75))
-        draw_trading_chart(d, history, color, (40, 200, 420, 250))
-        d.rectangle([10, 10, 490, 490], outline=(30, 41, 59), width=2)
+        d.text((80, 110), price_str, fill=(255, 255, 255), font=get_font(75))
+
+        # 3. Trading Chart (Doira kesib tashlamasligi uchun kichraytirildi va markazga olindi)
+        # Area: (x, y, width, height) -> (80, 210, 340, 200)
+        draw_trading_chart(d, history, color, (80, 210, 340, 200))
+        
+        # Border (Doira profil uchun ramka shart emas, lekin bezak sifatida qolishi mumkin)
+        # d.rectangle([10, 10, 490, 490], outline=(30, 41, 59), width=2)
     else:
         d.text((150, 220), "Loading...", fill=(255, 255, 255), font=get_font(40))
 
