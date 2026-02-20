@@ -20,7 +20,8 @@ async def add_session():
     client = TelegramClient(session_name, api_id, api_hash)
     
     try:
-        await client.start()
+        # 2FA (ikki bosqichli parol) bo'lsa .env dan oladi yoki terminaldan so'raydi
+        await client.start(password=lambda: tg_password or input("Ikki bosqichli parolingizni kiriting: "))
         me = await client.get_me()
         print(f"\nMuvaffaqiyatli bog'landi!")
         print(f"Foydalanuvchi: {me.first_name} (@{me.username})")
