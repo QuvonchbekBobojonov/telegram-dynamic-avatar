@@ -150,15 +150,21 @@ async def session_worker(session_path, session_index):
                 my_choice = choices[(session_index + time_offset) % len(choices)]
                 
                 avatar_file = await create_avatar(session_name, choice=my_choice)
-                
+                # Yangilash
                 file = await client.upload_file(avatar_file)
                 await client(functions.photos.UploadProfilePhotoRequest(file=file))
                 
-                photos = await client.get_profile_photos('me', limit=10)
-                if len(photos) > 1:
-                    await client(functions.photos.DeletePhotosRequest(id=photos[1:]))
+                # Eski rasmlarni o'chirish (Telegram'dagi)
+                full_user = await client(functions.users.GetFullUserRequest('me'))
+                photos = await client(functions.photos.GetUserPhotosRequest(user_id='me', offset=1, limit=100, max_id=0))
+                if photos.photos:
+                    await client(functions.photos.DeletePhotosRequest(id=photos.photos))
                 
-                print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi ({my_choice})!")
+                # Lokal vaqtinchalik faylni o'chirish
+                if os.path.exists(avatar_file):
+                    os.remove(avatar_file)
+                
+                print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi va eskilar o'chirildi ({my_choice})!")
             except Exception as e:
                 print(f"[{session_name}] Xato: {e}")
             
