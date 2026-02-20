@@ -155,10 +155,13 @@ async def session_worker(session_path, session_index):
                 await client(functions.photos.UploadProfilePhotoRequest(file=file))
                 
                 # Eski rasmlarni o'chirish (Telegram'dagi)
-                full_user = await client(functions.users.GetFullUserRequest('me'))
-                photos = await client(functions.photos.GetUserPhotosRequest(user_id='me', offset=1, limit=100, max_id=0))
-                if photos.photos:
-                    await client(functions.photos.DeletePhotosRequest(id=photos.photos))
+                try:
+                    photos = await client.get_profile_photos('me')
+                    if len(photos) > 1:
+                        # Faqat oxirgi yuklangan rasm qoladi, qolgan hammasini o'chiramiz
+                        await client(functions.photos.DeletePhotosRequest(id=photos[1:]))
+                except Exception as pe:
+                    print(f"[{session_name}] Rasmlarni ochirishda xato: {pe}")
                 
                 # Lokal vaqtinchalik faylni o'chirish
                 if os.path.exists(avatar_file):
