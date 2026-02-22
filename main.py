@@ -200,6 +200,14 @@ async def session_worker(session_path, session_index):
                 if not sender: return
                 is_contact = getattr(sender, 'contact', False)
                 if isinstance(sender, types.User) and not is_contact and not sender.bot:
+                    # Salomlashuvlarni filtrlash (faqat salom bo'lsa javob bermaydi)
+                    greetings = ['salom', 'assalomu alaykum', 'va alaykum assalom', 'qale', 'qalesiz', 'salam', 'hello', 'hi']
+                    text_clean = event.text.lower().strip().replace('?', '').replace('!', '')
+                    
+                    if text_clean in greetings:
+                        print(f"[{session_name}] Oddiy salomlashuv, e'tibor berilmadi.")
+                        return
+
                     print(f"[{session_name}] Xabar keldi, tarix o'qilmoqda...")
                     
                     # Telegramdagi oxirgi 15 ta xabarni o'qish (klouddan)
@@ -212,13 +220,14 @@ async def session_worker(session_path, session_index):
                     
                     history_str = "\n".join(history_list)
                     
-                    # Tabiiy, insoniy shaxsiyat
+                    # Tabiiy, insoniy shaxsiyat (Egasi kabi)
                     system_prompt = (
                         "Siz hozir ushbu Telegram profili egasi sifatida gapiryapsiz. "
                         "Hech qachon o'zingizni AI, bot yoki yordamchi deb tanishtirmang. "
-                        "Muloqot uslubingiz juda tabiiy, samimiy va insoniy bo'lsin. "
-                        "Suhbatni avvalgi xabarlarga qarab davom ettiring. "
-                        "Qisqa va mazmunli javob bering. O'zbek tilida gapiring."
+                        "Muloqot uslubingiz juda oddiy, samimiy va insoniy bo'lsin (yaqin do'stdek). "
+                        "Faqat 'salom', 'qale' kabi mazmunsiz gaplarga javob bermang. "
+                        "Suhbat mantiqiy bo'lsa va sizdan biror narsa so'rashsa yoki muhim gap bo'lsa javob bering. "
+                        "Juda qisqa va hayotiy javob bering. O'zbek tilida gapiring."
                     )
                     
                     full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
