@@ -20,7 +20,8 @@ ai_key = os.getenv('GEMINI_API_KEY')
 # Gemini AI ni sozlash
 if ai_key:
     genai.configure(api_key=ai_key)
-    model = genai.GenerativeModel('gemini-pro')
+    # Gemini 1.5 Flash - tezkor va yangiliklarni yaxshi tahlil qiladi
+    model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
@@ -182,6 +183,56 @@ async def create_avatar(session_name, choice=None):
     img.save(filename)
     return filename
 
+async def create_news_card(session_name, headline, category):
+    # Professional yangilik kartasini yaratish (1024x1024)
+    width, height = 1000, 600
+    color = (255, 50, 50) if "kiber" in category.lower() else (0, 150, 255)
+    
+    img = Image.new('RGB', (width, height), (10, 15, 30))
+    d = ImageDraw.Draw(img)
+    
+    # Orqa fon gradient/effekt
+    for i in range(height):
+        alpha = int(40 * (i / height))
+        d.line([(0, i), (width, i)], fill=(color[0], color[1], color[2], alpha))
+
+    # Ramka
+    d.rectangle([20, 20, 980, 580], outline=(color[0], color[1], color[2], 100), width=3)
+    
+    # "BREAKING NEWS" yorlig'i
+    d.rectangle([40, 40, 300, 90], fill=color)
+    d.text((55, 48), "BREAKING NEWS", fill=(255, 255, 255), font=get_font(30))
+    
+    # Kategoriya
+    d.text((320, 50), category.upper(), fill=(150, 150, 150), font=get_font(25))
+
+    # Headline (Sarlavha) - matnni bir necha qatorga bo'lish
+    words = headline.split()
+    lines = []
+    current_line = ""
+    for word in words:
+        test_line = current_line + " " + word if current_line else word
+        # Shrift kengligini taxminiy tekshirish
+        if len(test_line) < 35:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word
+    lines.append(current_line)
+
+    y_offset = 180
+    for line in lines[:4]: # Max 4 qator
+        d.text((50, y_offset), line, fill=(255, 255, 255), font=get_font(55))
+        y_offset += 75
+
+    # Pastki qism dekoratsiyasi
+    d.line([(50, 540), (950, 540)], fill=(color[0], color[1], color[2], 150), width=2)
+    d.text((50, 550), "TECH MONITOR // WORLDWIDE FEED", fill=(100, 100, 100), font=get_font(20))
+
+    filename = f"news_{session_name}.png"
+    img.save(filename)
+    return filename
+
 async def session_worker(session_path, session_index):
     session_name = os.path.basename(session_path).replace('.session', '')
     print(f"[{session_name}] Ish boshlanmoqda...")
@@ -258,34 +309,47 @@ async def session_worker(session_path, session_index):
                         # Market ma'lumotlarini post qilish
                         post_choice = random.choice(['BTC', 'USD', 'ETH', 'GOLD'])
                         avatar_file = await create_avatar(f"channel_{session_name}", choice=post_choice)
-                        caption = f"📊 **BOZOR ANALITIKASI**\n\n� Aktiv: **{post_choice}**\n🕒 Vaqt: {datetime.datetime.now().strftime('%H:%M')}\n📈 Holat: Bozor dinamikasi kuzatilmoqda.\n\n🌐 @{channel_id.replace('@', '')}"
+                        caption = f"📊 **BOZOR ANALITIKASI**\n\n📌 Aktiv: **{post_choice}**\n🕒 Vaqt: {datetime.datetime.now().strftime('%H:%M')}\n📈 Holat: Bozor dinamikasi kuzatilmoqda.\n\n🌐 @{channel_id.replace('@', '')}"
                         await client.send_file(channel_id, avatar_file, caption=caption)
                         if os.path.exists(avatar_file): os.remove(avatar_file)
                         print(f"[{session_name}] Kanalga bozor posti joylandi.")
                     else:
                         # IT va Kiberxavfsizlik yangiliklarini Gemini orqali yaratish
-                        print(f"[{session_name}] IT/Cyber yangilik tayyorlanmoqda...")
+                        print(f"[{session_name}] Internetdan yangilik qidirilmoqda...")
                         if model:
-                            topics = [
-                                "kiberhujumlar va himoya", "sun'iy intellekt yangiliklari",
-                                "dasturlash yangiliklari", "bulutli texnologiyalar",
-                                "shaxsiy ma'lumotlar xavfsizligi", "gadjetlar olami",
-                                "OSINT sirlari", "blokcheyn xavfsizligi",
-                                "IT karyera maslahatlari", "tarmoq xavfsizligi"
-                            ]
-                            focus = random.choice(topics)
-                            prompt = f"Mavzu: {focus}. IT va kiberxavfsizlik sohasidagi eng muhim va qiziqarli yangilik yoki maslahat haqida o'zbek tilida professional post tayyorla. Post sarlavhasi (⚡️), asosiy matn va xulosa (📌) qismlaridan iborat bo'lsin. Har doim yangi va qiziqarli ma'lumot ber. Hashtaglar qo'sh. Faqat matnni o'zini qaytar."
-                            response = await asyncio.to_thread(model.generate_content, prompt)
-                            if response and response.text:
-                                post_text = f"{response.text}\n\n📢 @{channel_id.replace('@', '')}"
-                                await client.send_message(channel_id, post_text)
-                                print(f"[{session_name}] Kanalga IT/Cyber {focus} posti joylandi.")
+                            prompt = """Hozirgi vaqtda (bugun/kecha) dunyodagi eng muhim IT yoki Kiberxavfsizlik yangiligini top. 
+                            Javobni FAQAT ushbu formatda (JSON) qaytar:
+                            {
+                                "headline": "Yangilik sarlavhasi (qisqa va jalb qiluvchi)",
+                                "body": "Yangilikning to'liq tafsiloti (o'zbek tilida, qiziqarli va tahliliy)",
+                                "category": "Kiberxavfsizlik" yoki "Texnologiya",
+                                "source": "Yangilik olingan manba nomi (masalan: Reuters, TechCrunch, The Verge)",
+                                "tags": "#hashtag1 #hashtag2"
+                            }
+                            Faqat professional va real faktlarga asoslangan bo'lsin."""
+                            
+                            try:
+                                response = await asyncio.to_thread(model.generate_content, prompt)
+                                if response and response.text:
+                                    import json
+                                    raw_text = response.text.replace("```json", "").replace("```", "").strip()
+                                    data = json.loads(raw_text)
+                                    news_img = await create_news_card(f"news_{session_name}", data['headline'], data['category'])
+                                    
+                                    # Manba qo'shilgan caption
+                                    source_info = f"🔗 Manba: **{data.get('source', 'Xalqaro yangiliklar portali')}**"
+                                    caption = f"⚡️ **{data['headline']}**\n\n{data['body']}\n\n{source_info}\n\n📌 #{data['category']} {data['tags']}\n\n📢 @{channel_id.replace('@', '')}"
+                                    
+                                    await client.send_file(channel_id, news_img, caption=caption)
+                                    if os.path.exists(news_img): os.remove(news_img)
+                                    print(f"[{session_name}] Kanalga vizual yangilik joylandi (Manba: {data.get('source')}).")
+                            except Exception as je:
+                                print(f"[{session_name}] JSON yoki AI javobida xato: {je}")
                     
                     iteration += 1
                 except Exception as ce:
                     print(f"[{session_name}] Kanalga post qilishda xato: {ce}")
                 
-                # Navbatdagi post uchun kutish (masalan, har 30 daqiqada almashib turadi)
                 await asyncio.sleep(1800) 
 
 
