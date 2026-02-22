@@ -238,11 +238,19 @@ async def session_worker(session_path, session_index):
                     full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
                     
                     try:
-                        response = await asyncio.to_thread(model.generate_content, full_prompt)
-                        if response and response.text:
-                            reply_text = response.text.strip()
-                            await event.reply(reply_text)
-                            print(f"[{session_name}] AI javob berdi.")
+                        # "Typing..." statusini ko'rsatish (Go'yo siz yozayotgandek)
+                        async with client.action(sender, 'typing'):
+                            # Matn uzunligiga qarab tasodifiy kutish (3-7 soniya)
+                            wait_time = random.uniform(3, 7)
+                            await asyncio.sleep(wait_time)
+                            
+                            response = await asyncio.to_thread(model.generate_content, full_prompt)
+                            if response and response.text:
+                                reply_text = response.text.strip()
+                                # Xabarni o'qilgan deb belgilash
+                                await client.send_read_acknowledge(event.chat_id, event.message)
+                                await event.reply(reply_text)
+                                print(f"[{session_name}] AI javob berdi ({wait_time:.1f}s kutildi).")
                     except Exception as ge:
                         if "429" in str(ge):
                             print(f"[{session_name}] Limitga tushdik (429). 60 soniya kutilmoqda...")
