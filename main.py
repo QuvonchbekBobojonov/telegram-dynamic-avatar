@@ -20,8 +20,19 @@ ai_key = os.getenv('GEMINI_API_KEY')
 # Gemini AI ni sozlash
 if ai_key:
     genai.configure(api_key=ai_key)
-    # Foydalanuvchi tanlagan model (Eslatma: gemini-pro yoki gemini-1.5-pro tavsiya etiladi)
-    model = genai.GenerativeModel('gemini-3-flash-preview')
+    # gemini-1.5-flash tavsiya etiladi
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # Debug: ruxsat berilgan modellarni ko'rish
+    async def list_models():
+        try:
+            print("[AI] Ruxsat berilgan modellar:")
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    print(f"  - {m.name}")
+        except Exception as e:
+            print(f"[AI] Modellarni o'qishda xato: {e}")
+    asyncio.get_event_loop().call_soon(lambda: asyncio.create_task(list_models()))
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
