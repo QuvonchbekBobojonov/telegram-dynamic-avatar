@@ -208,6 +208,12 @@ async def session_worker(session_path, session_index):
                         print(f"[{session_name}] Oddiy salomlashuv, e'tibor berilmadi.")
                         return
 
+                    # Tungi payt tekshiruvi (soat 00:00 dan 07:00 gacha javob bermaydi)
+                    now = datetime.datetime.now()
+                    if now.hour >= 0 and now.hour < 7:
+                        print(f"[{session_name}] Hozir tun, AI javob bermaydi (uyqu rejimi).")
+                        return
+
                     print(f"[{session_name}] Xabar keldi, tarix o'qilmoqda...")
                     
                     # Telegramdagi oxirgi 15 ta xabarni o'qish (klouddan)
