@@ -34,10 +34,6 @@ DATA_CACHE = {
     'ETH': (None, [], "ETH / USD", 0)
 }
 
-# Suhbat tarixini saqlash uchun (har bir foydalanuvchi uchun)
-CHAT_HISTORY = {}
-
-
 def get_btc_data():
     try:
         url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1"
@@ -184,46 +180,6 @@ async def create_avatar(session_name, choice=None):
     img.save(filename)
     return filename
 
-async def create_news_card(session_name, headline, category):
-    width, height = 1000, 600
-    color = (255, 50, 50) if "kiber" in category.lower() else (0, 150, 255)
-    
-    img = Image.new('RGB', (width, height), (10, 15, 30))
-    d = ImageDraw.Draw(img)
-    
-    for i in range(height):
-        alpha = int(40 * (i / height))
-        d.line([(0, i), (width, i)], fill=(color[0], color[1], color[2], alpha))
-
-    d.rectangle([20, 20, 980, 580], outline=(color[0], color[1], color[2], 100), width=3)
-    d.rectangle([40, 40, 300, 90], fill=color)
-    d.text((55, 48), "BREAKING NEWS", fill=(255, 255, 255), font=get_font(30))
-    d.text((320, 50), category.upper(), fill=(150, 150, 150), font=get_font(25))
-
-    words = headline.split()
-    lines = []
-    current_line = ""
-    for word in words:
-        test_line = current_line + " " + word if current_line else word
-        if len(test_line) < 35:
-            current_line = test_line
-        else:
-            lines.append(current_line)
-            current_line = word
-    lines.append(current_line)
-
-    y_offset = 180
-    for line in lines[:4]:
-        d.text((50, y_offset), line, fill=(255, 255, 255), font=get_font(55))
-        y_offset += 75
-
-    d.line([(50, 540), (950, 540)], fill=(color[0], color[1], color[2], 150), width=2)
-    d.text((50, 550), "TECH MONITOR // WORLDWIDE FEED", fill=(100, 100, 100), font=get_font(20))
-
-    filename = f"news_{session_name}.png"
-    img.save(filename)
-    return filename
-
 async def session_worker(session_path, session_index):
     session_name = os.path.basename(session_path).replace('.session', '')
     print(f"[{session_name}] Ish boshlanmoqda...")
@@ -244,16 +200,17 @@ async def session_worker(session_path, session_index):
                 if not sender: return
                 is_contact = getattr(sender, 'contact', False)
                 if isinstance(sender, types.User) and not is_contact and not sender.bot:
-                    user_id = sender.id
-                    if user_id not in CHAT_HISTORY:
-                        CHAT_HISTORY[user_id] = []
+                    print(f"[{session_name}] Xabar keldi, tarix o'qilmoqda...")
                     
-                    # Tarixni yangilash (oxirgi 10 ta xabar)
-                    CHAT_HISTORY[user_id].append(f"Foydalanuvchi: {event.text}")
-                    if len(CHAT_HISTORY[user_id]) > 10:
-                        CHAT_HISTORY[user_id] = CHAT_HISTORY[user_id][-10:]
+                    # Telegramdagi oxirgi 15 ta xabarni o'qish (klouddan)
+                    messages = await client.get_messages(sender, limit=15)
+                    history_list = []
+                    for msg in reversed(messages):
+                        sender_name = "Siz" if msg.out else "Foydalanuvchi"
+                        if msg.text:
+                            history_list.append(f"{sender_name}: {msg.text}")
                     
-                    history_str = "\n".join(CHAT_HISTORY[user_id])
+                    history_str = "\n".join(history_list)
                     
                     # Tabiiy, insoniy shaxsiyat
                     system_prompt = (
@@ -261,7 +218,7 @@ async def session_worker(session_path, session_index):
                         "Hech qachon o'zingizni AI, bot yoki yordamchi deb tanishtirmang. "
                         "Muloqot uslubingiz juda tabiiy, samimiy va insoniy bo'lsin. "
                         "Suhbatni avvalgi xabarlarga qarab davom ettiring. "
-                        "Qisqa va mazmunli javob bering."
+                        "Qisqa va mazmunli javob bering. O'zbek tilida gapiring."
                     )
                     
                     full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
@@ -269,9 +226,8 @@ async def session_worker(session_path, session_index):
                     response = await asyncio.to_thread(model.generate_content, full_prompt)
                     if response and response.text:
                         reply_text = response.text.strip()
-                        # Tarixga AIning javobini ham qo'shamiz
-                        CHAT_HISTORY[user_id].append(f"Siz: {reply_text}")
                         await event.reply(reply_text)
+                        print(f"[{session_name}] AI javob berdi.")
 
             except Exception as ae:
                 print(f"[{session_name}] AI xatolik: {ae}")
@@ -295,37 +251,7 @@ async def session_worker(session_path, session_index):
                     print(f"[{session_name}] Avatar xatosi: {e}")
                 await asyncio.sleep(900)
 
-        channel_id = os.getenv('CHANNEL_USERNAME')
-        async def channel_poster():
-            if not channel_id: return
-            while True:
-                try:
-                    if model:
-                        prompt = """Hozirgi vaqtda (bugun/kecha) dunyodagi eng muhim IT yoki Kiberxavfsizlik yangiligini top. 
-                        Javobni FAQAT ushbu formatda (JSON) qaytar:
-                        {
-                            "headline": "Yangilik sarlavhasi",
-                            "body": "Yangilik tafsiloti",
-                            "category": "Kiberxavfsizlik" yoki "Texnologiya",
-                            "source": "Manba nomi",
-                            "tags": "#hashtag"
-                        }"""
-                        response = await asyncio.to_thread(model.generate_content, prompt)
-                        if response and response.text:
-                            import json
-                            raw_text = response.text.replace("```json", "").replace("```", "").strip()
-                            data = json.loads(raw_text)
-                            news_img = await create_news_card(f"news_{session_name}", data['headline'], data['category'])
-                            caption = f"⚡️ **{data['headline']}**\n\n{data['body']}\n\n� Manba: **{data['source']}**\n\n📌 #{data['category']} {data['tags']}\n\n📢 @{channel_id.replace('@', '')}"
-                            await client.send_file(channel_id, news_img, caption=caption)
-                            if os.path.exists(news_img): os.remove(news_img)
-                            print(f"[{session_name}] Kanalga yangilik joylandi.")
-                except Exception as ce:
-                    print(f"[{session_name}] Kanalga post xatosi: {ce}")
-                await asyncio.sleep(1800)
-
         asyncio.create_task(avatar_timer())
-        asyncio.create_task(channel_poster())
         await client.run_until_disconnected()
     except Exception as e:
         print(f"[{session_name}] Xato: {e}")
