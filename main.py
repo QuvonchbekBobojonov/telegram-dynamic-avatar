@@ -244,16 +244,25 @@ async def session_worker(session_path, session_index):
                     full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
                     
                     try:
-                        # "Typing..." statusini ko'rsatish (Go'yo siz yozayotgandek)
+                        # "Typing..." statusini ko'rsatish
                         async with client.action(sender, 'typing'):
-                            # Matn uzunligiga qarab tasodifiy kutish (3-7 soniya)
                             wait_time = random.uniform(3, 7)
                             await asyncio.sleep(wait_time)
                             
+                            # Muhim: Kutish vaqtida siz o'zingiz javob bergan bo'lsangiz, AI to'xtaydi
+                            check_messages = await client.get_messages(sender, limit=1)
+                            if check_messages and check_messages[0].out:
+                                print(f"[{session_name}] Siz o'zingiz javob berdingiz, AI to'xtatildi.")
+                                return
+
                             response = await asyncio.to_thread(model.generate_content, full_prompt)
                             if response and response.text:
                                 reply_text = response.text.strip()
-                                # Xabarni o'qilgan deb belgilash
+                                # Oxirgi marta tekshirish (AI yuborishdan oldin)
+                                final_check = await client.get_messages(sender, limit=1)
+                                if final_check and final_check[0].out: 
+                                    return
+                                    
                                 await client.send_read_acknowledge(event.chat_id, event.message)
                                 await event.reply(reply_text)
                                 print(f"[{session_name}] AI javob berdi ({wait_time:.1f}s kutildi).")
