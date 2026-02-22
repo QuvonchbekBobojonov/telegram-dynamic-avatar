@@ -29,7 +29,8 @@ else:
 DATA_CACHE = {
     'BTC': (None, [], "BTC / USD", 0),
     'USD': (None, [], "USD / UZS", 0),
-    'GOLD': (None, [], "GOLD / USD", 0)
+    'GOLD': (None, [], "GOLD / USD", 0),
+    'ETH': (None, [], "ETH / USD", 0)
 }
 
 def get_btc_data():
@@ -83,6 +84,23 @@ def get_gold_data():
         print(f"GOLD API xatolik: {e}")
         return DATA_CACHE['GOLD']
 
+def get_eth_data():
+    try:
+        url = "https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1"
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        prices_history = [p[1] for p in data['prices']]
+        current_price = prices_history[-1]
+        start_price = prices_history[0]
+        change_pct = ((current_price - start_price) / start_price) * 100
+        res = (current_price, prices_history, "ETH / USD", change_pct)
+        DATA_CACHE['ETH'] = res
+        return res
+    except Exception as e:
+        print(f"ETH API xatolik: {e}")
+        return DATA_CACHE['ETH']
+
 def get_font(size):
     local_font = "fonts/font.ttf"
     if os.path.exists(local_font):
@@ -120,7 +138,7 @@ def draw_trading_chart(d, history, color, area):
 async def create_avatar(session_name, choice=None):
     # Agar tanlov berilmagan bo'sa, tasodifiy tanlaymiz
     if not choice:
-        choice = random.choice(['BTC', 'USD', 'GOLD'])
+        choice = random.choice(['BTC', 'USD', 'GOLD', 'ETH'])
         
     if choice == 'BTC':
         price, history, label, change = get_btc_data()
@@ -130,6 +148,10 @@ async def create_avatar(session_name, choice=None):
         price, history, label, change = get_usd_uzs_data()
         color = (59, 130, 246)
         prefix = ""
+    elif choice == 'ETH':
+        price, history, label, change = get_eth_data()
+        color = (155, 89, 182) # Purple for ETH
+        prefix = "$"
     else:
         price, history, label, change = get_gold_data()
         color = (234, 179, 8)
@@ -170,7 +192,7 @@ async def session_worker(session_path, session_index):
         me = await client.get_me()
         print(f"[{session_name}] Muvaffaqiyatli kirdi: {me.first_name}")
 
-        choices = ['BTC', 'USD', 'GOLD']
+        choices = ['BTC', 'USD', 'GOLD', 'ETH']
         
         # AI xabarlarini eshitish
         @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private))
@@ -222,8 +244,36 @@ async def session_worker(session_path, session_index):
                 
                 await asyncio.sleep(900)
 
-        # Taymerni ishga tushirish
+        # Kanallarga auto-post qilish (ixtiyoriy, agar .env da belgilansa)
+        channel_id = os.getenv('CHANNEL_USERNAME') # Masalan: @kanalingiz yoki ID
+        
+        async def channel_poster():
+            if not channel_id:
+                return
+                
+            while True:
+                try:
+                    # Har bir soatda bir marta post qilamiz
+                    # Valyutani tasodifiy tanlaymiz
+                    post_choice = random.choice(['BTC', 'USD', 'ETH', 'GOLD'])
+                    avatar_file = await create_avatar(f"channel_{session_name}", choice=post_choice)
+                    
+                    caption = f"📊 **Bozor ma'lumotlari**\n\n📌 Aktiv: {post_choice}\n🕒 Vaqt: {datetime.datetime.now().strftime('%H:%M')}\n\n@kanalingiz nomi bu yerda"
+                    await client.send_file(channel_id, avatar_file, caption=caption)
+                    
+                    if os.path.exists(avatar_file):
+                        os.remove(avatar_file)
+                        
+                    print(f"[{session_name}] Kanalga post joylandi: {post_choice}")
+                except Exception as ce:
+                    print(f"[{session_name}] Kanalga post qilishda xato: {ce}")
+                
+                await asyncio.sleep(3600) # 1 soat
+
+        # Taymerlarni ishga tushirish
         asyncio.create_task(avatar_timer())
+        asyncio.create_task(channel_poster())
+
         
         # Akkauntni ochiq holda saqlash (xabarlarni kutish uchun)
         print(f"[{session_name}] Xabarlar kutilmoqda...")
