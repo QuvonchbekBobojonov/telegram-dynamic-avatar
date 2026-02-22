@@ -3,3 +3,4 @@ Pillow
 cryptg
 python-dotenv
 requests
+google-generativeai

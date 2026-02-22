@@ -1,12 +1,13 @@
 import os
 import requests
 import random
-from telethon import TelegramClient, functions
+from telethon import TelegramClient, functions, events, types
 from PIL import Image, ImageDraw, ImageFont
 import datetime
 import asyncio
 from dotenv import load_dotenv
 import glob
+import google.generativeai as genai
 
 # .env faylini yuklaymiz
 load_dotenv()
@@ -14,6 +15,15 @@ load_dotenv()
 api_id = os.getenv('API_ID')
 api_hash = os.getenv('API_HASH')
 tg_password = os.getenv('TG_PASSWORD')
+ai_key = os.getenv('GEMINI_API_KEY')
+
+# Gemini AI ni sozlash
+if ai_key:
+    genai.configure(api_key=ai_key)
+    model = genai.GenerativeModel('gemini-pro')
+else:
+    model = None
+    print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
 
 # Ma'lumotlarni keshlab turish uchun global o'zgaruvchi
 DATA_CACHE = {
@@ -161,36 +171,64 @@ async def session_worker(session_path, session_index):
         print(f"[{session_name}] Muvaffaqiyatli kirdi: {me.first_name}")
 
         choices = ['BTC', 'USD', 'GOLD']
-        while True:
-            try:
-                # Har bir seans uchun har xil valyuta tanlaymiz (index ga qarab)
-                # Har 15 minutda (900 soniya) valyutalar almashib turadi
-                time_offset = int(datetime.datetime.now().timestamp() / 900)
-                my_choice = choices[(session_index + time_offset) % len(choices)]
-                
-                avatar_file = await create_avatar(session_name, choice=my_choice)
-                # Yangilash
-                file = await client.upload_file(avatar_file)
-                await client(functions.photos.UploadProfilePhotoRequest(file=file))
-                
-                # Eski rasmlarni o'chirish (Telegram'dagi)
-                try:
-                    photos = await client.get_profile_photos('me')
-                    if len(photos) > 1:
-                        # Faqat oxirgi yuklangan rasm qoladi, qolgan hammasini o'chiramiz
-                        await client(functions.photos.DeletePhotosRequest(id=photos[1:]))
-                except Exception as pe:
-                    print(f"[{session_name}] Rasmlarni ochirishda xato: {pe}")
-                
-                # Lokal vaqtinchalik faylni o'chirish
-                if os.path.exists(avatar_file):
-                    os.remove(avatar_file)
-                
-                print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi va eskilar o'chirildi ({my_choice})!")
-            except Exception as e:
-                print(f"[{session_name}] Xato: {e}")
+        
+        # AI xabarlarini eshitish
+        @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private))
+        async def handle_new_message(event):
+            if not model:
+                return
             
-            await asyncio.sleep(900) # 15 daqiqa
+            try:
+                sender = await event.get_sender()
+                # Faqat kontaktda bo'lmagan so'raymiz
+                # types.User dagi .contact maydoni True bo'lsa - kontaktda bor
+                if isinstance(sender, types.User) and not sender.contact and not sender.bot:
+                    print(f"[{session_name}] Natanish foydalanuvchi yozdi: {sender.first_name}")
+                    
+                    # Gemini orqali javob tayyorlash
+                    prompt = f"Sen Telegramda profiling egasining yordamchisisan. Foydalanuvchi yozmoqda: '{event.text}'. Unga o'zbek tilida qisqa, xushmuomala va aqlli javob ber. O'zingni 'AI Yordamchi' deb taniştir."
+                    response = await asyncio.to_thread(model.generate_content, prompt)
+                    
+                    if response and response.text:
+                        await event.reply(response.text)
+                        print(f"[{session_name}] AI javob qaytardi.")
+            except Exception as ae:
+                print(f"[{session_name}] AI xatolik: {ae}")
+
+        # Avatar yangilash sikli (orqa fonda)
+        async def avatar_timer():
+            while True:
+                try:
+                    time_offset = int(datetime.datetime.now().timestamp() / 900)
+                    my_choice = choices[(session_index + time_offset) % len(choices)]
+                    
+                    avatar_file = await create_avatar(session_name, choice=my_choice)
+                    file = await client.upload_file(avatar_file)
+                    await client(functions.photos.UploadProfilePhotoRequest(file=file))
+                    
+                    try:
+                        photos = await client.get_profile_photos('me')
+                        if len(photos) > 1:
+                            await client(functions.photos.DeletePhotosRequest(id=photos[1:]))
+                    except Exception as pe:
+                        print(f"[{session_name}] Rasmlarni ochirishda xato: {pe}")
+                    
+                    if os.path.exists(avatar_file):
+                        os.remove(avatar_file)
+                    
+                    print(f"[{session_name} - {datetime.datetime.now().strftime('%H:%M:%S')}] Avatar yangilandi ({my_choice})!")
+                except Exception as e:
+                    print(f"[{session_name}] Avatar xatosi: {e}")
+                
+                await asyncio.sleep(900)
+
+        # Taymerni ishga tushirish
+        asyncio.create_task(avatar_timer())
+        
+        # Akkauntni ochiq holda saqlash (xabarlarni kutish uchun)
+        print(f"[{session_name}] Xabarlar kutilmoqda...")
+        await client.run_until_disconnected()
+
     except Exception as e:
         print(f"[{session_name}] Login qilishda jiddiy xato: {e}")
     finally:
