@@ -253,18 +253,27 @@ async def session_worker(session_path, session_index):
             
             try:
                 sender = await event.get_sender()
-                # Faqat kontaktda bo'lmagan so'raymiz
-                # types.User dagi .contact maydoni True bo'lsa - kontaktda bor
-                if isinstance(sender, types.User) and not sender.contact and not sender.bot:
-                    print(f"[{session_name}] Natanish foydalanuvchi yozdi: {sender.first_name}")
+                if not sender: return
+                
+                # Debug uchun log
+                is_contact = getattr(sender, 'contact', False)
+                print(f"[{session_name}] Xabar keldi: {sender.first_name} (Kontakt: {is_contact})")
+                
+                # Faqat kontaktda bo'lmaganlarga (contact False yoki None bo'lsa)
+                if isinstance(sender, types.User) and not is_contact and not sender.bot:
+                    print(f"[{session_name}] Natanish foydalanuvchi yozdi, Gemini tayyorlanmoqda...")
                     
                     # Gemini orqali javob tayyorlash
                     prompt = f"Sen Telegramda profiling egasining yordamchisisan. Foydalanuvchi yozmoqda: '{event.text}'. Unga o'zbek tilida qisqa, xushmuomala va aqlli javob ber. O'zingni 'AI Yordamchi' deb taniştir."
+                    
+                    # Gemini so'rovini yuboramiz
                     response = await asyncio.to_thread(model.generate_content, prompt)
                     
                     if response and response.text:
                         await event.reply(response.text)
-                        print(f"[{session_name}] AI javob qaytardi.")
+                        print(f"[{session_name}] Gemini javob qaytardi: {response.text[:50]}...")
+                    else:
+                        print(f"[{session_name}] Gemini bo'sh javob qaytardi.")
             except Exception as ae:
                 print(f"[{session_name}] AI xatolik: {ae}")
 
