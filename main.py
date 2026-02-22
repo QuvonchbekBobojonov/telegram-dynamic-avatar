@@ -34,6 +34,10 @@ DATA_CACHE = {
     'ETH': (None, [], "ETH / USD", 0)
 }
 
+# Suhbat tarixini saqlash uchun (har bir foydalanuvchi uchun)
+CHAT_HISTORY = {}
+
+
 def get_btc_data():
     try:
         url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1"
@@ -240,18 +244,35 @@ async def session_worker(session_path, session_index):
                 if not sender: return
                 is_contact = getattr(sender, 'contact', False)
                 if isinstance(sender, types.User) and not is_contact and not sender.bot:
-                    # Psixologik tahlil va xulq-atvor bo'yicha ekspert shaxsiyati
+                    user_id = sender.id
+                    if user_id not in CHAT_HISTORY:
+                        CHAT_HISTORY[user_id] = []
+                    
+                    # Tarixni yangilash (oxirgi 10 ta xabar)
+                    CHAT_HISTORY[user_id].append(f"Foydalanuvchi: {event.text}")
+                    if len(CHAT_HISTORY[user_id]) > 10:
+                        CHAT_HISTORY[user_id] = CHAT_HISTORY[user_id][-10:]
+                    
+                    history_str = "\n".join(CHAT_HISTORY[user_id])
+                    
+                    # Tabiiy, insoniy shaxsiyat
                     system_prompt = (
-                        "Siz ushbu profil egasining AI Yordamchisiz. Mutaxassisligingiz: Inson fe’l-atvori, psixologik tahlil va xulq-atvor sirlari. "
-                        "Har doim foydalanuvchiga quyidagicha salom bering: "
-                        "'Assalomu alaykum! Men ushbu profiling sahifasi egasining AI Yordamchisiman. "
-                        "Inson fe’l-atvori, psixologik tahlil va xulq-atvor sirlari olamiga xush kelibsiz! Sizga qanday yordam bera olaman?' "
-                        "Javoblaringiz aqlli, tahliliy va xushmuomala bo'lsin."
+                        "Siz hozir ushbu Telegram profili egasi sifatida gapiryapsiz. "
+                        "Hech qachon o'zingizni AI, bot yoki yordamchi deb tanishtirmang. "
+                        "Muloqot uslubingiz juda tabiiy, samimiy va insoniy bo'lsin. "
+                        "Suhbatni avvalgi xabarlarga qarab davom ettiring. "
+                        "Qisqa va mazmunli javob bering."
                     )
-                    prompt = f"{system_prompt}\n\nFoydalanuvchi yozdi: '{event.text}'. Unga o'zbek tilida javob bering."
-                    response = await asyncio.to_thread(model.generate_content, prompt)
+                    
+                    full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
+                    
+                    response = await asyncio.to_thread(model.generate_content, full_prompt)
                     if response and response.text:
-                        await event.reply(response.text)
+                        reply_text = response.text.strip()
+                        # Tarixga AIning javobini ham qo'shamiz
+                        CHAT_HISTORY[user_id].append(f"Siz: {reply_text}")
+                        await event.reply(reply_text)
+
             except Exception as ae:
                 print(f"[{session_name}] AI xatolik: {ae}")
 
