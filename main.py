@@ -20,8 +20,8 @@ ai_key = os.getenv('GEMINI_API_KEY')
 # Gemini AI ni sozlash
 if ai_key:
     genai.configure(api_key=ai_key)
-    # Siz aytgan gemini-3-flash-preview modelidan foydalanamiz
-    model = genai.GenerativeModel('gemini-3-flash-preview')
+    # Limitlar baland bo'lgan gemini-1.5-flash modeliga o'tamiz
+    model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
@@ -223,11 +223,18 @@ async def session_worker(session_path, session_index):
                     
                     full_prompt = f"{system_prompt}\n\nSuhbat tarixi:\n{history_str}\n\nJavobingiz:"
                     
-                    response = await asyncio.to_thread(model.generate_content, full_prompt)
-                    if response and response.text:
-                        reply_text = response.text.strip()
-                        await event.reply(reply_text)
-                        print(f"[{session_name}] AI javob berdi.")
+                    try:
+                        response = await asyncio.to_thread(model.generate_content, full_prompt)
+                        if response and response.text:
+                            reply_text = response.text.strip()
+                            await event.reply(reply_text)
+                            print(f"[{session_name}] AI javob berdi.")
+                    except Exception as ge:
+                        if "429" in str(ge):
+                            print(f"[{session_name}] Limitga tushdik (429). 60 soniya kutilmoqda...")
+                            await asyncio.sleep(60)
+                        else:
+                            raise ge
 
             except Exception as ae:
                 print(f"[{session_name}] AI xatolik: {ae}")
