@@ -20,8 +20,8 @@ ai_key = os.getenv('GEMINI_API_KEY')
 # Gemini AI ni sozlash
 if ai_key:
     genai.configure(api_key=ai_key)
-    # gemini-1.5-flash tavsiya etiladi (gemini-3 mavjud emas)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Siz aytgan gemini-3-flash-preview modelidan foydalanamiz
+    model = genai.GenerativeModel('gemini-3-flash-preview')
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
