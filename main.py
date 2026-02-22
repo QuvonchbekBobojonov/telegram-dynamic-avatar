@@ -20,19 +20,8 @@ ai_key = os.getenv('GEMINI_API_KEY')
 # Gemini AI ni sozlash
 if ai_key:
     genai.configure(api_key=ai_key)
-    # gemini-1.5-flash tavsiya etiladi
+    # gemini-1.5-flash tavsiya etiladi (gemini-3 mavjud emas)
     model = genai.GenerativeModel('gemini-1.5-flash')
-    
-    # Debug: ruxsat berilgan modellarni ko'rish
-    async def list_models():
-        try:
-            print("[AI] Ruxsat berilgan modellar:")
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    print(f"  - {m.name}")
-        except Exception as e:
-            print(f"[AI] Modellarni o'qishda xato: {e}")
-    asyncio.get_event_loop().call_soon(lambda: asyncio.create_task(list_models()))
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
@@ -251,7 +240,15 @@ async def session_worker(session_path, session_index):
                 if not sender: return
                 is_contact = getattr(sender, 'contact', False)
                 if isinstance(sender, types.User) and not is_contact and not sender.bot:
-                    prompt = f"Sen Telegramda profiling egasining yordamchisisan. Foydalanuvchi yozmoqda: '{event.text}'. Unga o'zbek tilida qisqa, xushmuomala va aqlli javob ber. O'zingni 'AI Yordamchi' deb taniştir."
+                    # Psixologik tahlil va xulq-atvor bo'yicha ekspert shaxsiyati
+                    system_prompt = (
+                        "Siz ushbu profil egasining AI Yordamchisiz. Mutaxassisligingiz: Inson fe’l-atvori, psixologik tahlil va xulq-atvor sirlari. "
+                        "Har doim foydalanuvchiga quyidagicha salom bering: "
+                        "'Assalomu alaykum! Men ushbu profiling sahifasi egasining AI Yordamchisiman. "
+                        "Inson fe’l-atvori, psixologik tahlil va xulq-atvor sirlari olamiga xush kelibsiz! Sizga qanday yordam bera olaman?' "
+                        "Javoblaringiz aqlli, tahliliy va xushmuomala bo'lsin."
+                    )
+                    prompt = f"{system_prompt}\n\nFoydalanuvchi yozdi: '{event.text}'. Unga o'zbek tilida javob bering."
                     response = await asyncio.to_thread(model.generate_content, prompt)
                     if response and response.text:
                         await event.reply(response.text)
