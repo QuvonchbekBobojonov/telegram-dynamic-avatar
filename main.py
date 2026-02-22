@@ -251,24 +251,35 @@ async def session_worker(session_path, session_index):
             if not channel_id:
                 return
                 
+            iteration = 0
             while True:
                 try:
-                    # Har bir soatda bir marta post qilamiz
-                    # Valyutani tasodifiy tanlaymiz
-                    post_choice = random.choice(['BTC', 'USD', 'ETH', 'GOLD'])
-                    avatar_file = await create_avatar(f"channel_{session_name}", choice=post_choice)
+                    if iteration % 2 == 0:
+                        # Market ma'lumotlarini post qilish
+                        post_choice = random.choice(['BTC', 'USD', 'ETH', 'GOLD'])
+                        avatar_file = await create_avatar(f"channel_{session_name}", choice=post_choice)
+                        caption = f"📊 **BOZOR ANALITIKASI**\n\n� Aktiv: **{post_choice}**\n🕒 Vaqt: {datetime.datetime.now().strftime('%H:%M')}\n📈 Holat: Bozor dinamikasi kuzatilmoqda.\n\n🌐 @{channel_id.replace('@', '')}"
+                        await client.send_file(channel_id, avatar_file, caption=caption)
+                        if os.path.exists(avatar_file): os.remove(avatar_file)
+                        print(f"[{session_name}] Kanalga bozor posti joylandi.")
+                    else:
+                        # IT va Kiberxavfsizlik yangiliklarini Gemini orqali yaratish
+                        print(f"[{session_name}] IT/Cyber yangilik tayyorlanmoqda...")
+                        if model:
+                            prompt = "Bugungi kunda IT va Kiberxavfsizlik olamidagi eng muhim va qiziqarli texnologik yangilik yoki maslahat haqida o'zbek tilida professional post tayyorla. Post sarlavhasi (⚡️), asosiy matn va xulosa (📌) qismlaridan iborat bo'lsin. Hashtaglar qo'sh. Faqat matnni o'zini qaytar."
+                            response = await asyncio.to_thread(model.generate_content, prompt)
+                            if response and response.text:
+                                post_text = f"{response.text}\n\n📢 @{channel_id.replace('@', '')}"
+                                await client.send_message(channel_id, post_text)
+                                print(f"[{session_name}] Kanalga IT/Cyber posti joylandi.")
                     
-                    caption = f"📊 **Bozor ma'lumotlari**\n\n📌 Aktiv: {post_choice}\n🕒 Vaqt: {datetime.datetime.now().strftime('%H:%M')}\n\n@kanalingiz nomi bu yerda"
-                    await client.send_file(channel_id, avatar_file, caption=caption)
-                    
-                    if os.path.exists(avatar_file):
-                        os.remove(avatar_file)
-                        
-                    print(f"[{session_name}] Kanalga post joylandi: {post_choice}")
+                    iteration += 1
                 except Exception as ce:
                     print(f"[{session_name}] Kanalga post qilishda xato: {ce}")
                 
-                await asyncio.sleep(3600) # 1 soat
+                # Navbatdagi post uchun kutish (masalan, har 30 daqiqada almashib turadi)
+                await asyncio.sleep(1800) 
+
 
         # Taymerlarni ishga tushirish
         asyncio.create_task(avatar_timer())
