@@ -21,7 +21,7 @@ ai_key = os.getenv('GEMINI_API_KEY')
 if ai_key:
     genai.configure(api_key=ai_key)
     # Limitlar baland bo'lgan gemini-1.5-flash modeliga o'tamiz
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-3-flash')
 else:
     model = None
     print("OGOHLANTIRISH: GEMINI_API_KEY .env faylida topilmadi. AI javob berish funksiyasi ishlamaydi.")
