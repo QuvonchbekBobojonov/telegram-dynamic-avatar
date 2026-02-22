@@ -266,12 +266,20 @@ async def session_worker(session_path, session_index):
                         # IT va Kiberxavfsizlik yangiliklarini Gemini orqali yaratish
                         print(f"[{session_name}] IT/Cyber yangilik tayyorlanmoqda...")
                         if model:
-                            prompt = "Bugungi kunda IT va Kiberxavfsizlik olamidagi eng muhim va qiziqarli texnologik yangilik yoki maslahat haqida o'zbek tilida professional post tayyorla. Post sarlavhasi (⚡️), asosiy matn va xulosa (📌) qismlaridan iborat bo'lsin. Hashtaglar qo'sh. Faqat matnni o'zini qaytar."
+                            topics = [
+                                "kiberhujumlar va himoya", "sun'iy intellekt yangiliklari",
+                                "dasturlash yangiliklari", "bulutli texnologiyalar",
+                                "shaxsiy ma'lumotlar xavfsizligi", "gadjetlar olami",
+                                "OSINT sirlari", "blokcheyn xavfsizligi",
+                                "IT karyera maslahatlari", "tarmoq xavfsizligi"
+                            ]
+                            focus = random.choice(topics)
+                            prompt = f"Mavzu: {focus}. IT va kiberxavfsizlik sohasidagi eng muhim va qiziqarli yangilik yoki maslahat haqida o'zbek tilida professional post tayyorla. Post sarlavhasi (⚡️), asosiy matn va xulosa (📌) qismlaridan iborat bo'lsin. Har doim yangi va qiziqarli ma'lumot ber. Hashtaglar qo'sh. Faqat matnni o'zini qaytar."
                             response = await asyncio.to_thread(model.generate_content, prompt)
                             if response and response.text:
                                 post_text = f"{response.text}\n\n📢 @{channel_id.replace('@', '')}"
                                 await client.send_message(channel_id, post_text)
-                                print(f"[{session_name}] Kanalga IT/Cyber posti joylandi.")
+                                print(f"[{session_name}] Kanalga IT/Cyber {focus} posti joylandi.")
                     
                     iteration += 1
                 except Exception as ce:
